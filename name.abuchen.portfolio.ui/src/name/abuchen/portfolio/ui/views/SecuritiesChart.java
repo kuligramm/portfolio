@@ -1598,7 +1598,7 @@ public class SecuritiesChart
             long perShare = Math.round(gross * Values.Share.divider() * Values.Quote.factorToMoney() / t.getShares());
 
             // Format with only 2 decimal places instead of 8
-            return String.format("%,.2f", perShare / Values.Quote.divider()); //$NON-NLS-1$
+            return String.format("%,.2f", perShare / Values.Quote.divider());
         }
     }
 
