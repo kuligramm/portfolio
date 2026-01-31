@@ -2652,7 +2652,7 @@ public class FinTechGroupBankPDFExtractor extends AbstractPDFExtractor
                         // Max Mu Stermann Schlusstag        17.01.2019u Ausführungszeit   17:52 Uhr
                         // @formatter:on
                         .section("date") //
-                        .match("^.* (Handelstag|Schlusstag)[\\s]{1,}(?<date>[\\d]{2}\\.[\\d]{2}\\.[\\d]{4}).*$") //
+                        .match("^.*(Handelstag|Schlusstag)[\\s]{1,}(?<date>[\\d]{2}\\.[\\d]{2}\\.[\\d]{4}).*$") //
                         .assign((t, v) -> {
                             if (type.getCurrentContext().get("time") != null)
                                 t.setDateTime(asDate(v.get("date"), type.getCurrentContext().get("time")));
@@ -2886,7 +2886,7 @@ public class FinTechGroupBankPDFExtractor extends AbstractPDFExtractor
                         // Max Mu Stermann Schlusstag        17.01.2019u Ausführungszeit   17:52 Uhr
                         // @formatter:on
                         .section("date") //
-                        .match("^.* (Handelstag|Schlusstag)[\\s]{1,}(?<date>[\\d]{2}\\.[\\d]{2}\\.[\\d]{4}).*$") //
+                        .match("^.*(Handelstag|Schlusstag)[\\s]{1,}(?<date>[\\d]{2}\\.[\\d]{2}\\.[\\d]{4}).*$") //
                         .assign((t, v) -> {
                             if (type.getCurrentContext().get("time") != null)
                                 t.setDateTime(asDate(v.get("date"), type.getCurrentContext().get("time")));
