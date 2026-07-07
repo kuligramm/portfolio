@@ -163,11 +163,18 @@ public final class LazySecurityPerformanceRecord extends BaseSecurityPerformance
         };
     }
 
+    private final LazyValue<DividendCalculation> dividendCalculationFull = new LazyValue<>(() -> {
+        // ensure cost calculation is done (and has calculated
+        // moving averages)
+        costCalculation.get();
+        return Calculation.perform(DividendCalculation.class, converter, security, lineItems);
+    });
+
     private final LazyValue<DividendCalculationResult> dividendCalculation = new LazyValue<>(() -> {
         // ensure cost calculation is done (and has calculated
         // moving averages)
         costCalculation.get();
-        return Calculation.perform(DividendCalculation.class, converter, security, lineItems).getResult();
+        return dividendCalculationFull.get().getResult();
     });
 
     private final LazyValue<CapitalGainsCalculation> capitalGains = new LazyValue<>(
@@ -319,8 +326,41 @@ public final class LazySecurityPerformanceRecord extends BaseSecurityPerformance
 
     public Double getTotalRateOfReturnDiv(CostMethod costMethod)
     {
-        var costs = costCalculation.get();
-        var cost = getCostMoney(costMethod, TaxesAndFees.INCLUDED);
+        return new LazyValue<>(() -> {
+            var costs = costCalculation.get();
+            return costs.sharesHeld() > 0
+                            ? (double) dividendCalculation.get().sum().getAmount()
+                                            / (double) costs.fifoCost().getAmount()
+                            : 0;
+        });
+    }
+
+    public LazyValue<Double> getTotalRateOfReturnDivMovingAverage()
+    {
+        return new LazyValue<>(() -> {
+            var costs = costCalculation.get();
+            if (costs.sharesHeld() == 0 || costs.fifoCost().getAmount() == 0)
+                return 0.0;
+
+            // Calculate dividends of last 12 months
+            LocalDate endDate = interval.getEnd();
+            LocalDate startDate = endDate.minusMonths(12);
+            
+            Money dividendsLast12Months = dividendCalculationFull.get().getSum(startDate, endDate);
+            Money fifoCost = costs.fifoCost();
+
+            // Ensure both amounts are in the same currency
+            if (!dividendsLast12Months.getCurrencyCode().equals(fifoCost.getCurrencyCode()))
+                return 0.0;
+
+            return (double) dividendsLast12Months.getAmount() / (double) fifoCost.getAmount();
+        });
+    }
+
+    public LazyValue<CapitalGainsRecord> getRealizedCapitalGains()
+    {
+        return realizedCapitalGains;
+    }
 
         return costs.sharesHeld() > 0 ? (double) dividendCalculation.get().sum().getAmount() / (double) cost.getAmount()
                         : 0;

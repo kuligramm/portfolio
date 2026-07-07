@@ -1133,16 +1133,11 @@ public class SecuritiesPerformanceView extends AbstractFinanceView implements Re
         column.setMenuLabel(Messages.ColumnPurchaseValue_MenuLabel);
         column.setDescription(Messages.ColumnPurchaseValue_Description + TextUtil.PARAGRAPH_BREAK
                         + Messages.DescriptionDataRelativeToReportingPeriod);
-        column.setImage(Images.INTERVAL);
-        column.setLabelProvider(
-                        new RowElementLabelProvider(
-                                        r -> Values.Money.format(r.getCost(CostMethod.FIFO, TaxesAndFees.INCLUDED),
-                                                        getClient().getBaseCurrency()),
-                                        aggregate -> Values.Money.format(
-                                                        aggregate.sum(getClient().getBaseCurrency(),
-                                                                        r -> r.getCost(CostMethod.FIFO,
-                                                                                        TaxesAndFees.INCLUDED)),
-                                                        getClient().getBaseCurrency())));
+        column.setLabelProvider(new RowElementLabelProvider(
+                        r -> Values.Money.format(r.getFifoCost().get(), getClient().getBaseCurrency()),
+                        aggregate -> Values.Money.format(
+                                        aggregate.sum(getClient().getBaseCurrency(), r -> r.getFifoCost().get()),
+                                        getClient().getBaseCurrency())));
         column.setToolTipProvider(
                         element -> ((RowElement) element).explain(LazySecurityPerformanceRecord.Trails.FIFO_COST));
         column.setSorter(ColumnViewerSorter.create(
@@ -1155,7 +1150,6 @@ public class SecuritiesPerformanceView extends AbstractFinanceView implements Re
         column.setMenuLabel(Messages.ColumnPurchaseValueMovingAverage_MenuLabel);
         column.setDescription(Messages.ColumnPurchaseValueMovingAverage_Description + TextUtil.PARAGRAPH_BREAK
                         + Messages.DescriptionDataRelativeToReportingPeriod);
-        column.setImage(Images.INTERVAL);
         column.setLabelProvider(new RowElementLabelProvider(
                         r -> Values.Money.format(r.getCost(CostMethod.MOVING_AVERAGE, TaxesAndFees.INCLUDED),
                                         getClient().getBaseCurrency()),
@@ -1225,12 +1219,10 @@ public class SecuritiesPerformanceView extends AbstractFinanceView implements Re
         column.setMenuLabel(Messages.ColumnPurchasePrice_MenuLabel);
         column.setDescription(Messages.ColumnPurchasePrice_Description + TextUtil.PARAGRAPH_BREAK
                         + Messages.DescriptionDataRelativeToReportingPeriod);
-        column.setImage(Images.INTERVAL);
-        column.setLabelProvider(new RowElementLabelProvider(r -> Values.CalculatedQuote.format(
-                        r.getCostPerSharesHeld(CostMethod.FIFO, TaxesAndFees.NOT_INCLUDED),
-                        getClient().getBaseCurrency())));
-        column.setSorter(ColumnViewerSorter.create(e -> ((LazySecurityPerformanceRecord) e)
-                        .getCostPerSharesHeld(CostMethod.FIFO, TaxesAndFees.NOT_INCLUDED)));
+        column.setLabelProvider(new RowElementLabelProvider(r -> Values.CalculatedQuote
+                        .format(r.getFifoCostPerSharesHeld().get(), getClient().getBaseCurrency())));
+        column.setSorter(ColumnViewerSorter
+                        .create(e -> ((LazySecurityPerformanceRecord) e).getFifoCostPerSharesHeld().get()));
         recordColumns.addColumn(column);
 
         // cost value per share - moving average
@@ -1239,12 +1231,10 @@ public class SecuritiesPerformanceView extends AbstractFinanceView implements Re
         column.setMenuLabel(Messages.ColumnPurchasePriceMovingAverage_MenuLabel);
         column.setDescription(Messages.ColumnPurchasePriceMovingAverage_Description + TextUtil.PARAGRAPH_BREAK
                         + Messages.DescriptionDataRelativeToReportingPeriod);
-        column.setImage(Images.INTERVAL);
-        column.setLabelProvider(new RowElementLabelProvider(r -> Values.CalculatedQuote.format(
-                        r.getCostPerSharesHeld(CostMethod.MOVING_AVERAGE, TaxesAndFees.NOT_INCLUDED),
-                        getClient().getBaseCurrency())));
-        column.setSorter(ColumnViewerSorter.create(e -> ((LazySecurityPerformanceRecord) e)
-                        .getCostPerSharesHeld(CostMethod.MOVING_AVERAGE, TaxesAndFees.NOT_INCLUDED)));
+        column.setLabelProvider(new RowElementLabelProvider(r -> Values.CalculatedQuote
+                        .format(r.getMovingAverageCostPerSharesHeld().get(), getClient().getBaseCurrency())));
+        column.setSorter(ColumnViewerSorter
+                        .create(e -> ((LazySecurityPerformanceRecord) e).getMovingAverageCostPerSharesHeld().get()));
         column.setVisible(false);
         recordColumns.addColumn(column);
 
@@ -1255,12 +1245,10 @@ public class SecuritiesPerformanceView extends AbstractFinanceView implements Re
         column.setMenuLabel(Messages.ColumnPurchasePrice_MenuLabel);
         column.setDescription(Messages.ColumnGrossPurchasePriceFIFO_Description + TextUtil.PARAGRAPH_BREAK
                         + Messages.DescriptionDataRelativeToReportingPeriod);
-        column.setImage(Images.INTERVAL);
-        column.setLabelProvider(new RowElementLabelProvider(r -> Values.CalculatedQuote.format(
-                        r.getCostPerSharesHeld(CostMethod.FIFO, TaxesAndFees.INCLUDED),
-                        getClient().getBaseCurrency())));
-        column.setSorter(ColumnViewerSorter.create(e -> ((LazySecurityPerformanceRecord) e)
-                        .getCostPerSharesHeld(CostMethod.FIFO, TaxesAndFees.INCLUDED)));
+        column.setLabelProvider(new RowElementLabelProvider(r -> Values.CalculatedQuote
+                        .format(r.getGrossFifoCostPerSharesHeld().get(), getClient().getBaseCurrency())));
+        column.setSorter(ColumnViewerSorter
+                        .create(e -> ((LazySecurityPerformanceRecord) e).getGrossFifoCostPerSharesHeld().get()));
         recordColumns.addColumn(column);
 
         // cost value per share including fees and taxes - moving average
@@ -1269,12 +1257,10 @@ public class SecuritiesPerformanceView extends AbstractFinanceView implements Re
         column.setMenuLabel(Messages.ColumnPurchasePriceMovingAverage_MenuLabel);
         column.setDescription(Messages.ColumnGrossPurchasePriceMovingAverage_Description + TextUtil.PARAGRAPH_BREAK
                         + Messages.DescriptionDataRelativeToReportingPeriod);
-        column.setImage(Images.INTERVAL);
-        column.setLabelProvider(new RowElementLabelProvider(r -> Values.CalculatedQuote.format(
-                        r.getCostPerSharesHeld(CostMethod.MOVING_AVERAGE, TaxesAndFees.INCLUDED),
-                        getClient().getBaseCurrency())));
-        column.setSorter(ColumnViewerSorter.create(e -> ((LazySecurityPerformanceRecord) e)
-                        .getCostPerSharesHeld(CostMethod.MOVING_AVERAGE, TaxesAndFees.INCLUDED)));
+        column.setLabelProvider(new RowElementLabelProvider(r -> Values.CalculatedQuote
+                        .format(r.getGrossMovingAverageCostPerSharesHeld().get(), getClient().getBaseCurrency())));
+        column.setSorter(ColumnViewerSorter.create(
+                        e -> ((LazySecurityPerformanceRecord) e).getGrossMovingAverageCostPerSharesHeld().get()));
         column.setVisible(false);
         recordColumns.addColumn(column);
     }
@@ -1808,16 +1794,11 @@ public class SecuritiesPerformanceView extends AbstractFinanceView implements Re
         column.setDescription(Messages.ColumnPurchaseValue_Description + TextUtil.PARAGRAPH_BREAK
                         + Messages.DescriptionDataRelativeToReportingPeriod);
         column.setGroupLabel(Messages.LabelClientFilterMenu);
-        column.setImage(Images.INTERVAL);
-        column.setLabelProvider(
-                        new RowElementOptionLabelProvider(
-                                        r -> Values.Money.format(r.getCost(CostMethod.FIFO, TaxesAndFees.INCLUDED),
-                                                        getClient().getBaseCurrency()),
-                                        aggregate -> Values.Money.format(
-                                                        aggregate.sum(getClient().getBaseCurrency(),
-                                                                        r -> r.getCost(CostMethod.FIFO,
-                                                                                        TaxesAndFees.INCLUDED)),
-                                                        getClient().getBaseCurrency())));
+        column.setLabelProvider(new RowElementOptionLabelProvider(
+                        r -> Values.Money.format(r.getFifoCost().get(), getClient().getBaseCurrency()),
+                        aggregate -> Values.Money.format(
+                                        aggregate.sum(getClient().getBaseCurrency(), r -> r.getFifoCost().get()),
+                                        getClient().getBaseCurrency())));
         column.setToolTipProvider((element, option) -> {
             var row = (RowElement) element;
             if (!row.isRecord())
