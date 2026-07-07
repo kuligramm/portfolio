@@ -55,11 +55,7 @@ public class WirBankPDFExtractor extends AbstractPDFExtractor
 
         pdfTransaction //
 
-                        .subject(() -> {
-                            AccountTransaction accountTransaction = new AccountTransaction();
-                            accountTransaction.setType(AccountTransaction.Type.DEPOSIT);
-                            return accountTransaction;
-                        })
+                        .subject(() -> new AccountTransaction(AccountTransaction.Type.DEPOSIT))
 
                         // @formatter:off
                         // Einzahlung 3a
@@ -99,11 +95,7 @@ public class WirBankPDFExtractor extends AbstractPDFExtractor
 
         pdfTransaction //
 
-                        .subject(() -> {
-                            BuySellEntry portfolioTransaction = new BuySellEntry();
-                            portfolioTransaction.setType(PortfolioTransaction.Type.BUY);
-                            return portfolioTransaction;
-                        })
+                        .subject(() -> new BuySellEntry(PortfolioTransaction.Type.BUY))
 
                         // Is type --> "Verkauf" change from BUY to SELL
                         .section("type").optional() //
@@ -194,11 +186,7 @@ public class WirBankPDFExtractor extends AbstractPDFExtractor
 
         pdfTransaction //
 
-                        .subject(() -> {
-                            AccountTransaction accountTransaction = new AccountTransaction();
-                            accountTransaction.setType(AccountTransaction.Type.INTEREST);
-                            return accountTransaction;
-                        })
+                        .subject(() -> new AccountTransaction(AccountTransaction.Type.INTEREST))
 
                         // @formatter:off
                         // Zins
@@ -242,11 +230,7 @@ public class WirBankPDFExtractor extends AbstractPDFExtractor
 
         pdfTransaction //
 
-                        .subject(() -> {
-                            AccountTransaction accountTransaction = new AccountTransaction();
-                            accountTransaction.setType(AccountTransaction.Type.FEES);
-                            return accountTransaction;
-                        })
+                        .subject(() -> new AccountTransaction(AccountTransaction.Type.FEES))
 
                         // @formatter:off
                         // Belastung
@@ -281,13 +265,11 @@ public class WirBankPDFExtractor extends AbstractPDFExtractor
                         .match("^(?<note>Commission de gestion effective VIAC.*: [\\.,\\d]+%).*$")
                         .assign((t, v) -> t.setNote(v.get("note")))
 
-                        .wrap((t, ctx) -> {
-                            TransactionItem item = new TransactionItem(t);
-
+                        .wrap(t -> {
                             if (t.getCurrencyCode() != null && t.getAmount() == 0)
-                                ctx.markAsFailure(Messages.MsgErrorTransactionTypeNotSupportedOrRequired);
+                                return new SkippedItem(new TransactionItem(t), Messages.MsgErrorTransactionTypeNotSupportedOrRequired);
 
-                            return item;
+                            return new TransactionItem(t);
                         });
     }
 
@@ -315,21 +297,12 @@ public class WirBankPDFExtractor extends AbstractPDFExtractor
 
         pdfTransaction //
 
-                        .subject(() -> {
-                            AccountTransaction accountTransaction = new AccountTransaction();
-                            accountTransaction.setType(AccountTransaction.Type.DIVIDENDS);
-                            return accountTransaction;
-                        })
+                        .subject(() -> new AccountTransaction(AccountTransaction.Type.DIVIDENDS))
 
                         .section("type").optional() //
-                        .match("^(Dividendenart|Type of dividend|Type de dividende): " //
-                                        + "(?<type>(R.ckerstattung Quellensteuer|Refund withholding tax|Remboursement d.imp.t . la source))$") //
-                        .assign((t, v) -> {
-                            if ("Rückerstattung Quellensteuer".equals(v.get("type")) //
-                                            || "Refund withholding tax".equals(v.get("type")) //
-                                            || "Remboursement d'impôt à la source".equals(v.get("type")))
-                                t.setType(AccountTransaction.Type.TAX_REFUND);
-                        })
+                        .match("^(Dividendenart|Aussch.ttungsart|Type of (dividend|distribution)|Type de dividende): " //
+                                        + "(?<type>(R.ckerstattung Quellensteuer|R.ckerstattung Verrechnungssteuer|Refund (\\w+ )?withholding tax|Remboursement d.imp.t . la source))$") //
+                        .assign((t, v) -> t.setType(AccountTransaction.Type.TAX_REFUND))
 
                         // @formatter:off
                         // Cancelation Dividend Payment
@@ -343,20 +316,27 @@ public class WirBankPDFExtractor extends AbstractPDFExtractor
                         // 47.817 Ant UBS ETF MSCI USA SRI
                         // ISIN: LU0629460089
                         // Ausschüttung: USD 0.72
+                        //
+                        // Type of distribution: Refund Swiss withholding tax
+                        // 0.196 units UBS Canada
+                        // ISIN: CH0030849613
+                        // Distribution: CHF 0.23
                         // @formatter:on
                         .section("name", "isin", "currency") //
-                        .find("(Dividendenart|Type of dividend|Type de dividende):.*") //
+                        .find("(Dividendenart|Aussch.ttungsart|Type of (dividend|distribution)|Type de dividende):.*") //
                         .match("^[\\.,\\d]+ (Anteile|Qty|Ant|parts|units|actions)?(?<name>.*)$") //
                         .match("^ISIN: (?<isin>[A-Z]{2}[A-Z0-9]{9}[0-9])$") //
-                        .match("^(Aussch.ttung|Dividend payment|Dividende distribu.): (?<currency>[\\w]{3}) .*$") //
+                        .match("^(Aussch.ttung|Dividend payment|Distribution|Dividende distribu.): (?<currency>[\\w]{3}) .*$") //
                         .assign((t, v) -> t.setSecurity(getOrCreateSecurity(v)))
 
                         // @formatter:off
                         // Dividendenart: Ordentliche Dividende
                         // 47.817 Ant UBS ETF MSCI USA SRI
+                        // Type of distribution: Refund Swiss withholding tax
+                        // 0.196 units UBS Canada
                         // @formatter:on
                         .section("shares") //
-                        .find("(Dividendenart|Type of dividend|Type de dividende):.*") //
+                        .find("(Dividendenart|Aussch.ttungsart|Type of (dividend|distribution)|Type de dividende):.*") //
                         .match("^(?<shares>[\\.,\\d]+) (Anteile|Qty|Ant|parts|units|actions)?.*$") //
                         .assign((t, v) -> t.setShares(asShares(v.get("shares"))))
 
@@ -418,9 +398,10 @@ public class WirBankPDFExtractor extends AbstractPDFExtractor
                         // @formatter:off
                         // Dividendenart: Ordentliche Dividende
                         // Type of dividend: Ordinary dividend
+                        // Type of distribution: Refund Swiss withholding tax
                         // @formatter:on
                         .section("note").optional() //
-                        .match("^(Dividendenart|Type of dividend|Type de dividende): (?<note>.*)") //
+                        .match("^(Dividendenart|Aussch.ttungsart|Type of (dividend|distribution)|Type de dividende): (?<note>.*)") //
                         .assign((t, v) -> t.setNote(trim(v.get("note"))))
 
                         .wrap(TransactionItem::new);

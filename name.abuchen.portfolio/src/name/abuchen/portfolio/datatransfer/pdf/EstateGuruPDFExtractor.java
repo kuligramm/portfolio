@@ -2,6 +2,8 @@ package name.abuchen.portfolio.datatransfer.pdf;
 
 import static name.abuchen.portfolio.util.TextUtil.trim;
 
+import java.util.Locale;
+
 import name.abuchen.portfolio.datatransfer.ExtractorUtils;
 import name.abuchen.portfolio.datatransfer.pdf.PDFParser.Block;
 import name.abuchen.portfolio.datatransfer.pdf.PDFParser.DocumentType;
@@ -56,11 +58,7 @@ public class EstateGuruPDFExtractor extends AbstractPDFExtractor
         depositBlock.setMaxSize(1);
         depositBlock.set(new Transaction<AccountTransaction>()
 
-                        .subject(() -> {
-                            var accountTransaction = new AccountTransaction();
-                            accountTransaction.setType(AccountTransaction.Type.DEPOSIT);
-                            return accountTransaction;
-                        })
+                        .subject(() -> new AccountTransaction(AccountTransaction.Type.DEPOSIT))
 
                         .section("date", "currency", "amount") //
                         .match("^(?<date>[\\d]{2}\\.[\\d]{2}\\.[\\d]{4}), [\\d]{2}:[\\d]{2} [\\d]{2}\\.[\\d]{2}\\.[\\d]{4}, [\\d]{2}:[\\d]{2} .*" //
@@ -94,11 +92,7 @@ public class EstateGuruPDFExtractor extends AbstractPDFExtractor
         removalBlock.setMaxSize(1);
         removalBlock.set(new Transaction<AccountTransaction>()
 
-                        .subject(() -> {
-                            var accountTransaction = new AccountTransaction();
-                            accountTransaction.setType(AccountTransaction.Type.REMOVAL);
-                            return accountTransaction;
-                        })
+                        .subject(() -> new AccountTransaction(AccountTransaction.Type.REMOVAL))
 
 
                         .section("date", "currency", "amount") //
@@ -138,11 +132,7 @@ public class EstateGuruPDFExtractor extends AbstractPDFExtractor
         interestBlock.setMaxSize(1);
         interestBlock.set(new Transaction<AccountTransaction>()
 
-                        .subject(() -> {
-                            var accountTransaction = new AccountTransaction();
-                            accountTransaction.setType(AccountTransaction.Type.INTEREST);
-                            return accountTransaction;
-                        })
+                        .subject(() -> new AccountTransaction(AccountTransaction.Type.INTEREST))
 
                         .section("date", "note", "currency", "amount") //
                         .match("^(?<date>[\\d]{2}\\.[\\d]{2}\\.[\\d]{4}), [\\d]{2}:[\\d]{2} [\\d]{2}\\.[\\d]{2}\\.[\\d]{4}, [\\d]{2}:[\\d]{2} " //
@@ -185,11 +175,7 @@ public class EstateGuruPDFExtractor extends AbstractPDFExtractor
         feesBlock.setMaxSize(1);
         feesBlock.set(new Transaction<AccountTransaction>()
 
-                        .subject(() -> {
-                            var accountTransaction = new AccountTransaction();
-                            accountTransaction.setType(AccountTransaction.Type.FEES);
-                            return accountTransaction;
-                        })
+                        .subject(() -> new AccountTransaction(AccountTransaction.Type.FEES))
 
                         .section("date", "note", "currency", "amount") //
                         .match("^(?<date>[\\d]{2}\\.[\\d]{2}\\.[\\d]{4}), [\\d]{2}:[\\d]{2} [\\d]{2}\\.[\\d]{2}\\.[\\d]{4}, [\\d]{2}:[\\d]{2} " //
@@ -214,19 +200,7 @@ public class EstateGuruPDFExtractor extends AbstractPDFExtractor
     @Override
     protected long asAmount(String value)
     {
-        var language = "de";
-        var country = "DE";
-
-        var lastDot = value.lastIndexOf(".");
-        var lastComma = value.lastIndexOf(",");
-
-        // returns the greater of two int values
-        if (Math.max(lastDot, lastComma) == lastDot)
-        {
-            language = "en";
-            country = "US";
-        }
-
-        return ExtractorUtils.convertToNumberLong(value, Values.Amount, language, country);
+        return ExtractorUtils.convertToNumberLong(value, Values.Amount,
+                        ExtractorUtils.guessNumberLocale(value, Locale.GERMANY));
     }
 }

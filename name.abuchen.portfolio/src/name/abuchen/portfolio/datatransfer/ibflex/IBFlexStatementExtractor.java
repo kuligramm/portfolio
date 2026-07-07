@@ -809,8 +809,11 @@ public class IBFlexStatementExtractor implements Extractor
         private Consumer<Element> buildSalesTaxTransaction = element -> {
             AccountTransaction accountTransaction = new AccountTransaction();
 
-            // Set transaction type
-            accountTransaction.setType(AccountTransaction.Type.TAXES);
+            // Set transaction type - positive amounts are tax refund
+            if (Math.signum(Double.parseDouble(element.getAttribute("salesTax"))) == -1)
+                accountTransaction.setType(AccountTransaction.Type.TAXES);
+            else
+                accountTransaction.setType(AccountTransaction.Type.TAX_REFUND);                
 
             // Set date
             accountTransaction.setDateTime(ExtractorUtils.asDate(element.getAttribute("date")));
@@ -1373,7 +1376,7 @@ public class IBFlexStatementExtractor implements Extractor
         private void calculateShares(Transaction transaction, Element element)
         {
             long numShares = 0;
-            double amount = Double.parseDouble(element.getAttribute("amount"));
+            BigDecimal amount = asDecimal(element.getAttribute("amount"));
 
             // Regular expression pattern to match the Dividend per Share and
             // calculate the number of shares
@@ -1382,8 +1385,9 @@ public class IBFlexStatementExtractor implements Extractor
 
             if (mDividendShare.find())
             {
-                double dividendPerShares = Double.parseDouble(mDividendShare.group("dividendPerShares"));
-                numShares = Math.round(amount / dividendPerShares) * Values.Share.factor();
+                BigDecimal dividendPerShares = asDecimal(mDividendShare.group("dividendPerShares"));
+                numShares = amount.divide(dividendPerShares, Values.MC).setScale(0, RoundingMode.HALF_UP).longValue()
+                                * Values.Share.factor();
             }
 
             transaction.setShares(numShares);
@@ -1557,6 +1561,11 @@ public class IBFlexStatementExtractor implements Extractor
     }
 
     protected BigDecimal asExchangeRate(String value)
+    {
+        return ExtractorUtils.convertToNumberBigDecimal(value, Values.Share, "en", "US");
+    }
+
+    protected BigDecimal asDecimal(String value)
     {
         return ExtractorUtils.convertToNumberBigDecimal(value, Values.Share, "en", "US");
     }

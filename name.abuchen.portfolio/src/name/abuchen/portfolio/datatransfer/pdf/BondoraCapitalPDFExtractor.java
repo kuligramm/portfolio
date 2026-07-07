@@ -3,13 +3,16 @@ package name.abuchen.portfolio.datatransfer.pdf;
 import static name.abuchen.portfolio.util.TextUtil.trim;
 
 import java.util.Locale;
+import java.util.Optional;
+import java.util.regex.Pattern;
 
+import name.abuchen.portfolio.datatransfer.ExtractorUtils;
 import name.abuchen.portfolio.datatransfer.pdf.PDFParser.Block;
 import name.abuchen.portfolio.datatransfer.pdf.PDFParser.DocumentType;
+import name.abuchen.portfolio.datatransfer.pdf.PDFParser.ParsedData;
 import name.abuchen.portfolio.datatransfer.pdf.PDFParser.Transaction;
 import name.abuchen.portfolio.model.AccountTransaction;
 import name.abuchen.portfolio.model.Client;
-import name.abuchen.portfolio.money.CurrencyUnit;
 
 /**
  * @implNote Bondora Capital does not have a specific bank identifier.
@@ -17,6 +20,9 @@ import name.abuchen.portfolio.money.CurrencyUnit;
 @SuppressWarnings("nls")
 public class BondoraCapitalPDFExtractor extends AbstractPDFExtractor
 {
+    private static final String NUMBER_LOCALE_LANGUAGE = "numberLocaleLanguage";
+    private static final String NUMBER_LOCALE_COUNTRY = "numberLocaleCountry";
+
     public BondoraCapitalPDFExtractor(Client client)
     {
         super(client);
@@ -32,25 +38,68 @@ public class BondoraCapitalPDFExtractor extends AbstractPDFExtractor
 
     private void addAccountStatementTransaction()
     {
-        final DocumentType type = new DocumentType("(?m)^(Zusammenfassung|Summary)$");
+        final var type = new DocumentType("(?m)^(Zusammenfassung|Summary)$", (context, lines) -> {
+            Locale documentLocale = null;
+            var isConflicting = false;
+
+            var summaryNumberLine = Pattern.compile(
+                            ".*\\b(Opening|Zu Beginn|Payments in|Einzahlungen|Payments out|Auszahlungen|Ergebnis)\\b.*");
+            var moneyValue = Pattern.compile( //
+                            "(?:\\p{Sc}\\s*)?(?<amount>-?[\\d][\\.,'\\d\\s]*)(?:\\s*\\p{Sc})?");
+            var transactionLine = Pattern.compile(
+                            "^([\\d]{1,2}[\\.\\-/][\\d]{1,2}[\\.\\-/][\\d]{4}|[\\d]{4}[\\.\\-/][\\d]{1,2}[\\.\\-/][\\d]{1,2}) .*$");
+
+            for (var line : lines)
+            {
+                if (transactionLine.matcher(line).matches())
+                    break;
+
+                if (!summaryNumberLine.matcher(line).matches())
+                    continue;
+
+                var matcher = moneyValue.matcher(line);
+                while (matcher.find())
+                {
+                    var locale = ExtractorUtils.detectNumberLocale(matcher.group("amount"));
+                    if (locale.isEmpty())
+                        continue;
+
+                    if (documentLocale == null)
+                    {
+                        documentLocale = locale.get();
+                    }
+                    else if (!documentLocale.equals(locale.get()))
+                    {
+                        isConflicting = true;
+                        break;
+                    }
+                }
+
+                if (isConflicting)
+                    break;
+            }
+
+            if (!isConflicting && documentLocale != null)
+            {
+                context.put(NUMBER_LOCALE_LANGUAGE, documentLocale.getLanguage());
+                context.put(NUMBER_LOCALE_COUNTRY, documentLocale.getCountry());
+            }
+        });
         this.addDocumentTyp(type);
 
-        Transaction<AccountTransaction> pdfTransaction = new Transaction<>();
+        var pdfTransaction = new Transaction<AccountTransaction>();
 
-        Block firstRelevantLine = new Block("^([\\d]{1,2}.[\\d]{1,2}.[\\d]{4}|[\\d]{4}.[\\d]{1,2}.[\\d]{1,2}) (?!Automatische .berweisung).*$");
+        var firstRelevantLine = new Block(
+                        "^([\\d]{1,2}.[\\d]{1,2}.[\\d]{4}|[\\d]{4}.[\\d]{1,2}.[\\d]{1,2}) (?!Automatische .berweisung|Nicht\\s+zugeordneter\\s+Saldo).*$");
         type.addBlock(firstRelevantLine);
         firstRelevantLine.setMaxSize(1);
         firstRelevantLine.set(pdfTransaction);
 
         pdfTransaction //
 
-                        .subject(() -> {
-                            AccountTransaction accountTransaction = new AccountTransaction();
-                            accountTransaction.setType(AccountTransaction.Type.INTEREST);
-                            return accountTransaction;
-                        })
+                        .subject(() -> new AccountTransaction(AccountTransaction.Type.INTEREST))
 
-                        .section("type").optional()
+                        .section("type").optional() //
                         .match("^([\\d]{1,2}.[\\d]{1,2}.[\\d]{4}|[\\d]{4}.[\\d]{1,2}.[\\d]{1,2}) " //
                                         + "(?<type>(.berweisen" //
                                         + "|SEPA\\-Bank.berweisung" //
@@ -75,7 +124,7 @@ public class BondoraCapitalPDFExtractor extends AbstractPDFExtractor
                         })
 
                         .oneOf( //
-                                        // @formatter:off
+                        // @formatter:off
                                         // 06.02.2022 Go & Grow Zinsen 0,22 € 1.228,18 €
                                         // 07.02.2022 Überweisen 1.000 € 2.228,18 €
                                         // 27.11.2023 SEPA-Banküberweisung 50 € 1.064,4 €
@@ -83,9 +132,12 @@ public class BondoraCapitalPDFExtractor extends AbstractPDFExtractor
                                         //
                                         // 25.10.2020 Go & Grow Zinsen 1 € 5'630,99 €
                                         // 26.10.2020 Go & Grow Zinsen 1,01 € 5'632 €
+                                        // 02.05.2026 Go & Grow Zinsen 1,02 € 6.369,75 €
                                         // @formatter:on
                                         section -> section //
                                                         .attributes("date", "note", "amount") //
+                                                        .documentContextOptionally(NUMBER_LOCALE_LANGUAGE,
+                                                                        NUMBER_LOCALE_COUNTRY) //
                                                         .match("^(?<date>([\\d]{1,2}\\.[\\d]{2}\\.[\\d]{4}|[\\d]{4}\\.[\\d]{2}\\.[\\d]{2})) " //
                                                                         + "(?<note>(.berweisen" //
                                                                         + "|SEPA\\-Bank.berweisung" //
@@ -102,18 +154,13 @@ public class BondoraCapitalPDFExtractor extends AbstractPDFExtractor
                                                         .assign((t, v) -> {
                                                             t.setDateTime(asDate(v.get("date")));
 
-                                                            String language = "de";
-                                                            String country = "DE";
+                                                            var locale = ExtractorUtils
+                                                                            .detectNumberLocale(v.get("amount")) //
+                                                                            .or(() -> localeFromDocumentContext(v)) //
+                                                                            .orElse(Locale.GERMANY);
 
-                                                            int apostrophe = v.get("amount").indexOf("\'");
-                                                            if (apostrophe >= 0)
-                                                            {
-                                                                language = "de";
-                                                                country = "CH";
-                                                            }
-
-                                                            t.setAmount(asAmount(v.get("amount"), language, country));
-                                                            t.setCurrencyCode(CurrencyUnit.EUR);
+                                                            t.setAmount(asAmount(v.get("amount"), locale));
+                                                            t.setCurrencyCode(asCurrencyCode("EUR"));
                                                             t.setNote(trim(v.get("note")));
                                                         }),
                                         // @formatter:off
@@ -126,7 +173,9 @@ public class BondoraCapitalPDFExtractor extends AbstractPDFExtractor
                                         // 2/4/2025 SEPA payment €1,000 €1,000
                                         // @formatter:on
                                         section -> section //
-                                                        .attributes("date", "note", "amount") //
+                                                        .attributes("date", "note", "amount", "balance") //
+                                                        .documentContextOptionally(NUMBER_LOCALE_LANGUAGE,
+                                                                        NUMBER_LOCALE_COUNTRY) //
                                                         .match("^(?<date>([\\d]{1,2}\\/[\\d]{1,2}\\/[\\d]{4}|[\\d]{4}\\/[\\d]{1,2}\\/[\\d]{1,2})) " //
                                                                         + "(?<note>(.berweisen" //
                                                                         + "|SEPA\\-Bank.berweisung" //
@@ -139,30 +188,19 @@ public class BondoraCapitalPDFExtractor extends AbstractPDFExtractor
                                                                         + "|Withdrawal)) " //
                                                                         + "(\\p{Sc})?(\\W)?" //
                                                                         + "(?<amount>[\\.,\\d]+)" //
-                                                                        + "(\\W)?(\\p{Sc})(\\W)?(\\-)?[\\.,\\d]+(\\W)?(\\p{Sc})?$") //
+                                                                        + "(\\W)?(\\p{Sc})(\\W)?(?<balance>\\-?[\\.,\\d]+)(\\W)?(\\p{Sc})?$") //
                                                         .assign((t, v) -> {
                                                             t.setDateTime(asDate(v.get("date"), Locale.UK));
 
-                                                            String language = "de";
-                                                            String country = "DE";
+                                                            var locale = ExtractorUtils
+                                                                            .detectNumberLocale(v.get("amount")) //
+                                                                            .or(() -> ExtractorUtils.detectNumberLocale(
+                                                                                            v.get("balance"))) //
+                                                                            .or(() -> localeFromDocumentContext(v)) //
+                                                                            .orElse(Locale.UK);
 
-                                                            int lastDot = v.get("amount").lastIndexOf(".");
-                                                            int lastComma = v.get("amount").lastIndexOf(",");
-
-                                                            if (Math.max(lastDot, lastComma) == lastDot)
-                                                            {
-                                                                language = "en";
-                                                                country = "US";
-                                                            }
-                                                            else if ((lastComma >= 0 && (v.get("amount").length() - lastComma - 1) >= 3) //
-                                                                            || (lastDot >= 0 && (v.get("amount").length() - lastDot - 1) >= 3))
-                                                            {
-                                                                language = "en";
-                                                                country = "US";
-                                                            }
-
-                                                            t.setAmount(asAmount(v.get("amount"), language, country));
-                                                            t.setCurrencyCode(CurrencyUnit.EUR);
+                                                            t.setAmount(asAmount(v.get("amount"), locale));
+                                                            t.setCurrencyCode(asCurrencyCode("EUR"));
                                                             t.setNote(trim(v.get("note")));
                                                         }),
                                         // @formatter:off
@@ -186,11 +224,22 @@ public class BondoraCapitalPDFExtractor extends AbstractPDFExtractor
                                                                         + "(\\W)?(\\p{Sc})(\\W)?(\\-)?[\\.,\\d]+(\\W)?(\\p{Sc})?$") //
                                                         .assign((t, v) -> {
                                                             t.setDateTime(asDate(v.get("date")));
-                                                            t.setAmount(asAmount(v.get("amount"), "de", "DE"));
-                                                            t.setCurrencyCode(CurrencyUnit.EUR);
+                                                            t.setAmount(asAmount(v.get("amount"), Locale.GERMANY));
+                                                            t.setCurrencyCode(asCurrencyCode("EUR"));
                                                             t.setNote(trim(v.get("note")));
                                                         }))
 
                         .wrap(TransactionItem::new);
+    }
+
+    private Optional<Locale> localeFromDocumentContext(ParsedData values)
+    {
+        var language = values.get(NUMBER_LOCALE_LANGUAGE);
+        var country = values.get(NUMBER_LOCALE_COUNTRY);
+
+        if (language == null || country == null)
+            return Optional.empty();
+
+        return Optional.of(Locale.of(language, country));
     }
 }
