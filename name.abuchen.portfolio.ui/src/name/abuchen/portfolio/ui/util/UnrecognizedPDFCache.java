@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import jakarta.inject.Singleton;
 
@@ -62,7 +61,8 @@ public class UnrecognizedPDFCache
         private static final long serialVersionUID = 1L;
 
         @Override
-        protected boolean removeEldestEntry(Map.Entry<Key, Entry> eldest)
+        // Fehlerbeseitigung Axel
+        protected boolean removeEldestEntry(java.util.Map.Entry<Key, UnrecognizedPDFCache.Entry> eldest)
         {
             return size() > MAXIMUM;
         }
