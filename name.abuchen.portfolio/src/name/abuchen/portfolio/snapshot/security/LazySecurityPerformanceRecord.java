@@ -400,21 +400,21 @@ public final class LazySecurityPerformanceRecord extends BaseSecurityPerformance
     {
         return new LazyValue<>(() -> {
             var costs = costCalculation.get();
-            if (costs.sharesHeld() == 0 || costs.movingAverageCost().getAmount() == 0)
+            Money denom = costs.movingAverageCost();
+
+            if (costs.sharesHeld() == 0 || denom == null || denom.getAmount() == 0)
                 return 0.0;
 
-            // Calculate dividends of last 12 months
+            // Dividenden der letzten 12 Monate
             LocalDate endDate = interval.getEnd();
             LocalDate startDate = endDate.minusMonths(12);
 
             Money dividendsLast12Months = dividendCalculationFull.get().getSum(startDate, endDate);
-            Money maCost = costs.movingAverageCost();
 
-            // Ensure both amounts are in the same currency
-            if (!dividendsLast12Months.getCurrencyCode().equals(maCost.getCurrencyCode()))
+            if (!dividendsLast12Months.getCurrencyCode().equals(denom.getCurrencyCode()))
                 return 0.0;
 
-            return (double) dividendsLast12Months.getAmount() / (double) maCost.getAmount();
+            return (double) dividendsLast12Months.getAmount() / (double) denom.getAmount();
         });
     }
 
