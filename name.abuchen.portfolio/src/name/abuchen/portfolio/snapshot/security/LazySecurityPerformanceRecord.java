@@ -377,32 +377,44 @@ public final class LazySecurityPerformanceRecord extends BaseSecurityPerformance
         // Axels Korrektur durch Github-Copilot 10/26
         var costs = costCalculation.get();
 
-        // Keine gehaltenen Anteile oder keine Kosten -> 0
-        if (costs.sharesHeld() == 0 || costs.fifoCost().getAmount() == 0)
+        Money denom;
+        switch (costMethod)
+        {
+            case FIFO:
+                denom = costs.fifoCost();
+                break;
+            case MOVING_AVERAGE:
+                denom = costs.movingAverageCost();
+                break;
+            default:
+                denom = costs.fifoCost();
+        }
+
+        if (costs.sharesHeld() == 0 || denom == null || denom.getAmount() == 0)
             return 0.0;
 
-        return (double) dividendCalculation.get().sum().getAmount() / (double) costs.fifoCost().getAmount();
+        return (double) dividendCalculation.get().sum().getAmount() / (double) denom.getAmount();
     }
 
     public LazyValue<Double> getTotalRateOfReturnDivMovingAverage()
     {
         return new LazyValue<>(() -> {
             var costs = costCalculation.get();
-            if (costs.sharesHeld() == 0 || costs.fifoCost().getAmount() == 0)
+            if (costs.sharesHeld() == 0 || costs.movingAverageCost().getAmount() == 0)
                 return 0.0;
 
             // Calculate dividends of last 12 months
             LocalDate endDate = interval.getEnd();
             LocalDate startDate = endDate.minusMonths(12);
-            
+
             Money dividendsLast12Months = dividendCalculationFull.get().getSum(startDate, endDate);
-            Money fifoCost = costs.fifoCost();
+            Money maCost = costs.movingAverageCost();
 
             // Ensure both amounts are in the same currency
-            if (!dividendsLast12Months.getCurrencyCode().equals(fifoCost.getCurrencyCode()))
+            if (!dividendsLast12Months.getCurrencyCode().equals(maCost.getCurrencyCode()))
                 return 0.0;
 
-            return (double) dividendsLast12Months.getAmount() / (double) fifoCost.getAmount();
+            return (double) dividendsLast12Months.getAmount() / (double) maCost.getAmount();
         });
     }
 
