@@ -366,13 +366,22 @@ public final class LazySecurityPerformanceRecord extends BaseSecurityPerformance
 
     public Double getTotalRateOfReturnDiv(CostMethod costMethod)
     {
-        return new LazyValue<>(() -> {
-            var costs = costCalculation.get();
-            return costs.sharesHeld() > 0
-                            ? (double) dividendCalculation.get().sum().getAmount()
-                                            / (double) costs.fifoCost().getAmount()
-                            : 0;
-        });
+        // return new LazyValue<>(() -> {
+        // var costs = costCalculation.get();
+        // return costs.sharesHeld() > 0
+        // ? (double) dividendCalculation.get().sum().getAmount()
+        // / (double) costs.fifoCost().getAmount()
+        // : 0;
+        // });
+
+        // Axels Korrektur durch Github-Copilot 10/26
+        var costs = costCalculation.get();
+
+        // Keine gehaltenen Anteile oder keine Kosten -> 0
+        if (costs.sharesHeld() == 0 || costs.fifoCost().getAmount() == 0)
+            return 0.0;
+
+        return (double) dividendCalculation.get().sum().getAmount() / (double) costs.fifoCost().getAmount();
     }
 
     public LazyValue<Double> getTotalRateOfReturnDivMovingAverage()
@@ -397,14 +406,11 @@ public final class LazySecurityPerformanceRecord extends BaseSecurityPerformance
         });
     }
 
-    public LazyValue<CapitalGainsRecord> getRealizedCapitalGains()
-    {
-        return realizedCapitalGains;
-    }
-
-        return costs.sharesHeld() > 0 ? (double) dividendCalculation.get().sum().getAmount() / (double) cost.getAmount()
-                        : 0;
-    }
+    // auskommentiert Axel 10/26
+    // public LazyValue<CapitalGainsRecord> getRealizedCapitalGains()
+    // {
+    // return realizedCapitalGains;
+    // }
 
     public CapitalGainsRecord getRealizedCapitalGains(CostMethod costMethod)
     {
