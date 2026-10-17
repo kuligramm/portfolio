@@ -406,6 +406,46 @@ public final class LazySecurityPerformanceRecord extends BaseSecurityPerformance
         });
     }
 
+    // --- UI accessors expected by SecuritiesPerformanceView ---
+    public LazyValue<Money> getFifoCost()
+    {
+        return new LazyValue<>(() -> costCalculation.get().fifoCost());
+    }
+
+    public LazyValue<Money> getMovingAverageCost()
+    {
+        return new LazyValue<>(() -> costCalculation.get().movingAverageCost());
+    }
+
+    /**
+     * cost per share (FIFO) as Quote, used by UI (non-gross = taxes/fees
+     * NOT_INCLUDED)
+     */
+    public LazyValue<Quote> getFifoCostPerSharesHeld()
+    {
+        return new LazyValue<>(() -> getCostPerSharesHeld(CostMethod.FIFO, TaxesAndFees.NOT_INCLUDED));
+    }
+
+    /**
+     * cost per share (moving average) as Quote, used by UI
+     */
+    public LazyValue<Quote> getMovingAverageCostPerSharesHeld()
+    {
+        return new LazyValue<>(() -> getCostPerSharesHeld(CostMethod.MOVING_AVERAGE, TaxesAndFees.NOT_INCLUDED));
+    }
+
+    /** gross FIFO (including taxes/fees) per share */
+    public LazyValue<Quote> getGrossFifoCostPerSharesHeld()
+    {
+        return new LazyValue<>(() -> getCostPerSharesHeld(CostMethod.FIFO, TaxesAndFees.INCLUDED));
+    }
+
+    /** gross Moving Average (including taxes/fees) per share */
+    public LazyValue<Quote> getGrossMovingAverageCostPerSharesHeld()
+    {
+        return new LazyValue<>(() -> getCostPerSharesHeld(CostMethod.MOVING_AVERAGE, TaxesAndFees.INCLUDED));
+    }
+
     // auskommentiert Axel 10/26
     // public LazyValue<CapitalGainsRecord> getRealizedCapitalGains()
     // {
