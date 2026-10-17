@@ -118,7 +118,7 @@ public class ConsorsbankPDFExtractorTest
         assertThat(results, hasItem(purchase( //
                         hasDate("2015-09-21T12:45:38"), hasShares(250.00), //
                         hasSource("Kauf02.txt"), //
-                        hasNote("92612045.001 | Limitkurs  5,500000 EUR"), //
+                        hasNote("92612045.001 | Limitkurs 5,500000 EUR"), //
                         hasAmount("EUR", 1387.85), hasGrossValue("EUR", 1370.00), //
                         hasTaxes("EUR", 0.00), hasFees("EUR", 2.95 + 3.00 + 5.00 + 4.95 + 1.95))));
     }
@@ -186,7 +186,7 @@ public class ConsorsbankPDFExtractorTest
         assertThat(results, hasItem(purchase( //
                         hasDate("2020-01-15T12:00:56"), hasShares(210.00), //
                         hasSource("Kauf04.txt"), //
-                        hasNote("123456.001 | Limitkurs  46,200000 EUR"), //
+                        hasNote("123456.001 | Limitkurs 46,200000 EUR"), //
                         hasAmount("EUR", 9745.25), hasGrossValue("EUR", 9702.00), //
                         hasTaxes("EUR", 0.00), hasFees("EUR", 2.50 + 11.54 + 24.26 + 4.95))));
     }
@@ -912,7 +912,7 @@ public class ConsorsbankPDFExtractorTest
         assertThat(results, hasItem(purchase( //
                         hasDate("2019-09-06T13:43:10"), hasShares(300.00), //
                         hasSource("Kauf20.txt"), //
-                        hasNote("148553598.001 | Limitkurs  11,300000 EUR"), //
+                        hasNote("148553598.001 | Limitkurs 11,300000 EUR"), //
                         hasAmount("EUR", 3408.64), hasGrossValue("EUR", 3390.00), //
                         hasTaxes("EUR", 0.00), hasFees("EUR", 2.50 + 2.71 + 8.48 + 4.95))));
     }
@@ -946,7 +946,7 @@ public class ConsorsbankPDFExtractorTest
         assertThat(results, hasItem(purchase( //
                         hasDate("2020-03-27T20:13:13"), hasShares(37.00), //
                         hasSource("Kauf21.txt"), //
-                        hasNote("161127520.001 | Limitkurs  27,700000 EUR"), //
+                        hasNote("161127520.001 | Limitkurs 27,700000 EUR"), //
                         hasAmount("EUR", 1026.34), hasGrossValue("EUR", 1016.39), //
                         hasTaxes("EUR", 0.00), hasFees("EUR", 5.00 + 4.95))));
     }
@@ -1262,6 +1262,144 @@ public class ConsorsbankPDFExtractorTest
     }
 
     @Test
+    public void testWertpapierKauf30()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        List<Exception> errors = new ArrayList<>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "Kauf30.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(1L));
+        assertThat(countAccountTransactions(results), is(0L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin("LU0218910023"), hasWkn("A0EQVB"), hasTicker(null), //
+                        hasName("VONTOBEL-GL EQ.A-DL"), //
+                        hasCurrencyCode("USD"))));
+
+        // check buy sell transaction
+        assertThat(results, hasItem(purchase( //
+                        hasDate("2020-10-16T13:40:01"), hasShares(0.32990), //
+                        hasSource("Kauf30.txt"), //
+                        hasNote("194783734.001"), //
+                        hasAmount("EUR", 100.00), hasGrossValue("EUR", 100.00), //
+                        hasForexGrossValue("USD", 118.48), //
+                        hasTaxes("EUR", 0.00), hasFees("EUR", 0.00))));
+    }
+
+    @Test
+    public void testWertpapierKauf31()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        List<Exception> errors = new ArrayList<>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "Kauf31.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(1L));
+        assertThat(countAccountTransactions(results), is(0L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin("LU0218910023"), hasWkn("A0EQVB"), hasTicker(null), //
+                        hasName("VONTOBEL-GL EQ.A-DL"), //
+                        hasCurrencyCode("USD"))));
+
+        // check buy sell transaction
+        assertThat(results, hasItem(purchase( //
+                        hasDate("2019-10-15T14:02:19"), hasShares(0.35347), //
+                        hasSource("Kauf31.txt"), //
+                        hasNote("439309430.001"), //
+                        hasAmount("EUR", 100.00), hasGrossValue("EUR", 97.56), //
+                        hasForexGrossValue("USD", 107.79), //
+                        hasTaxes("EUR", 0.00), hasFees("EUR", 2.44))));
+    }
+
+    @Test
+    public void testAnleiheKauf01()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        var errors = new ArrayList<Exception>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "AnleiheKauf01.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(1L));
+        assertThat(countAccountTransactions(results), is(0L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin("GRR000000010"), hasWkn("A1G1UW"), hasTicker(null), //
+                        hasName("0,0 % GRIECHENLAND 12-42 IO GDP   15.OKT"), //
+                        hasCurrencyCode("EUR"))));
+
+        // check buy sell transaction
+        assertThat(results, hasItem(purchase( //
+                        hasDate("2017-12-19T17:00:34"), hasShares(4000), //
+                        hasSource("AnleiheKauf01.txt"), //
+                        hasNote("120321388.001 | Limitkurs 0,550000 %"), //
+                        hasAmount("EUR", 2210.45), hasGrossValue("EUR", 2200.00), //
+                        hasTaxes("EUR", 0.00), hasFees("EUR", 5.50 + 4.95))));
+    }
+
+    @Test
+    public void testAnleiheKauf02()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        var errors = new ArrayList<Exception>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "AnleiheKauf02.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(1L));
+        assertThat(countAccountTransactions(results), is(0L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin("GRR000000010"), hasWkn("A1G1UW"), hasTicker(null), //
+                        hasName("0,0 % GRIECHENLAND 12-42 IO GDP 15.OKT"), //
+                        hasCurrencyCode("EUR"))));
+
+        // check buy sell transaction
+        assertThat(results, hasItem(purchase( //
+                        hasDate("2025-04-09T12:03:33"), hasShares(10000), //
+                        hasSource("AnleiheKauf02.txt"), //
+                        hasNote("329893673.001 | Limitkurs 0,280000 % | Poolfaktor 0,904761904"), //
+                        hasAmount("EUR", 2546.56), hasGrossValue("EUR", 2533.33), //
+                        hasTaxes("EUR", 0.00), hasFees("EUR", 1.95 + 6.33 + 4.95))));
+    }
+
+    @Test
     public void testWertpapierBezug01()
     {
         var extractor = new ConsorsbankPDFExtractor(new Client());
@@ -1324,7 +1462,7 @@ public class ConsorsbankPDFExtractorTest
         assertThat(results, hasItem(sale( //
                         hasDate("2015-02-18T12:10:30"), hasShares(140.00), //
                         hasSource("Verkauf01.txt"), //
-                        hasNote("12345678.001 | Limitkurs  42,850000 EUR"), //
+                        hasNote("12345678.001 | Limitkurs 42,850000 EUR"), //
                         hasAmount("EUR", 5794.56), hasGrossValue("EUR", 6048.00), //
                         hasTaxes("EUR", 198.08 + 17.82 + 10.89), hasFees("EUR", 2.95 + 3.63 + 15.12 + 4.95))));
     }
@@ -1806,6 +1944,108 @@ public class ConsorsbankPDFExtractorTest
     }
 
     @Test
+    public void testAnleiheVerkauf01()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        List<Exception> errors = new ArrayList<>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "AnleiheVerkauf01.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(1L));
+        assertThat(countAccountTransactions(results), is(0L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin("GR0133007204"), hasWkn("A1G1UG"), hasTicker(null), //
+                        hasName("3,65 % GRIECHENLAND 12-29 7 24.FEB"), //
+                        hasCurrencyCode("EUR"))));
+
+        // check buy sell transaction
+        assertThat(results, hasItem(sale( //
+                        hasDate("2020-12-14T16:06:51"), hasShares(1.6), //
+                        hasSource("AnleiheVerkauf01.txt"), //
+                        hasNote("183797558.001 | Limitkurs 124,963000 % | Stückzins 296 Tage 4,72 EUR"), //
+                        hasAmount("EUR", 160.69), hasGrossValue("EUR", 204.66), //
+                        hasTaxes("EUR", 32.25 + 1.77), hasFees("EUR", 5.00 + 4.95))));
+    }
+
+    @Test
+    public void testAnleiheVerkauf02()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        List<Exception> errors = new ArrayList<>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "AnleiheVerkauf02.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(1L));
+        assertThat(countAccountTransactions(results), is(0L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin("GR0133010232"), hasWkn("A1G1UK"), hasTicker(null), //
+                        hasName("3,65 % GRIECHENLAND 12-32 10       24.FEB"), //
+                        hasCurrencyCode("EUR"))));
+
+        // check buy sell transaction
+        assertThat(results, hasItem(sale( //
+                        hasDate("2020-11-25T10:55:28"), hasShares(1.6), //
+                        hasSource("AnleiheVerkauf02.txt"), //
+                        hasNote("182034228.001 | Limitkurs 130,791000 % | Stückzins 277 Tage EUR 4,42"), //
+                        hasAmount("EUR", 167.34), hasGrossValue("EUR", 213.69), //
+                        hasTaxes("EUR", 34.51 + 1.89), hasFees("EUR", 5.00 + 4.95))));
+    }
+
+    @Test
+    public void testAnleiheEinloesung01()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        var errors = new ArrayList<Exception>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "AnleiheEinlösung01.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(1L));
+        assertThat(countAccountTransactions(results), is(0L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin("GRR000000010"), hasWkn("A1G1UW"), hasTicker(null), //
+                        hasName("Griechenland EO-FLR Secs 12(23-42) 1 IO GDP"), //
+                        hasCurrencyCode("EUR"))));
+
+        // check buy sell transaction
+        assertThat(results, hasItem(sale( //
+                        hasDate("2025-05-14T00:00"), hasShares(21000), //
+                        hasSource("AnleiheEinlösung01.txt"), //
+                        hasNote(null), //
+                        hasAmount("EUR", 5297.88), hasGrossValue("EUR", 5297.88), //
+                        hasTaxes("EUR", 0.00), hasFees("EUR", 0.00))));
+    }
+
+    @Test
     public void testWertpapierEinloesung01()
     {
         var extractor = new ConsorsbankPDFExtractor(new Client());
@@ -1871,6 +2111,42 @@ public class ConsorsbankPDFExtractorTest
                         hasNote(null), //
                         hasAmount("EUR", 0.73), hasGrossValue("EUR", 0.73), //
                         hasTaxes("EUR", 0.00), hasFees("EUR", 0.00))));
+    }
+
+    @Test
+    public void testVorabpauschale02()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        List<Exception> errors = new ArrayList<>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "Vorabpauschale02.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(0L));
+        assertThat(countAccountTransactions(results), is(0L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(1L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin("DE000A0H0785"), hasWkn("A0H078"), hasTicker(null), //
+                        hasName("iS.EO G.B.C.1.5-10.5y.U.ETF DE Inhaber-Anteile"), //
+                        hasCurrencyCode("EUR"))));
+
+        // check skipped item
+        assertThat(results, hasItem(skippedItem( //
+                        Messages.MsgErrorTransactionTypeNotSupportedOrRequired, //
+                        taxes( //
+                                        hasDate("2020-01-01T00:00"), hasShares(12.47652), //
+                                        hasSource("Vorabpauschale02.txt"), //
+                                        hasNote(null), //
+                                        hasAmount("EUR", 0.00), hasGrossValue("EUR", 0.00), //
+                                        hasTaxes("EUR", 0.00), hasFees("EUR", 0.00)))));
     }
 
     @Test
@@ -3395,7 +3671,7 @@ public class ConsorsbankPDFExtractorTest
 
         // check dividends transaction
         assertThat(results, hasItem(dividend( //
-                        hasDate("2025-04-10T00:00"), hasExDate(null), //
+                        hasDate("2025-04-10T00:00"), hasExDate("2025-04-01T00:00"), //
                         hasShares(1000.00), //
                         hasSource("Dividende26.txt"), //
                         hasNote(null), //
@@ -3432,7 +3708,7 @@ public class ConsorsbankPDFExtractorTest
 
         // check dividends transaction
         assertThat(results, hasItem(dividend( //
-                        hasDate("2025-04-10T00:00"), hasExDate(null), //
+                        hasDate("2025-04-10T00:00"), hasExDate("2025-04-01T00:00"), //
                         hasShares(1000.00), //
                         hasSource("Dividende26.txt"), //
                         hasNote(null), //
@@ -3729,6 +4005,148 @@ public class ConsorsbankPDFExtractorTest
     }
 
     @Test
+    public void testDividende31()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        List<Exception> errors = new ArrayList<>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "Dividende31.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(0L));
+        assertThat(countAccountTransactions(results), is(1L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "USD");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin("US1912161007"), hasWkn("850663"), hasTicker(null), //
+                        hasName("COCA-COLA CO., THE Registered Shares DL -,25"), //
+                        hasCurrencyCode("USD"))));
+
+        // check dividends transaction
+        assertThat(results, hasItem(dividend( //
+                        hasDate("2026-07-01T00:00"), hasExDate(null), //
+                        hasShares(25.00), //
+                        hasSource("Dividende31.txt"), //
+                        hasNote(null), //
+                        hasAmount("USD", 11.26), hasGrossValue("USD", 13.25), //
+                        hasTaxes("USD", 1.99), hasFees("USD", 0.00))));
+    }
+
+    @Test
+    public void testDividende31WithSecurityInEUR()
+    {
+        var security = new Security("COCA-COLA CO., THE Registered Shares DL -,25", "EUR");
+        security.setIsin("US1912161007");
+        security.setWkn("850663");
+
+        var client = new Client();
+        client.addSecurity(security);
+
+        var extractor = new ConsorsbankPDFExtractor(client);
+
+        List<Exception> errors = new ArrayList<>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "Dividende31.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(0L));
+        assertThat(countBuySell(results), is(0L));
+        assertThat(countAccountTransactions(results), is(1L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(1));
+        new AssertImportActions().check(results, "USD");
+
+        // check dividends transaction
+        assertThat(results, hasItem(dividend( //
+                        hasDate("2026-07-01T00:00"), hasExDate(null), //
+                        hasShares(25.00), //
+                        hasSource("Dividende31.txt"), //
+                        hasNote(null), //
+                        hasAmount("USD", 11.26), hasGrossValue("USD", 13.25), //
+                        hasForexGrossValue("EUR", 11.56), //
+                        hasTaxes("USD", 1.99), hasFees("USD", 0.00))));
+    }
+
+    @Test
+    public void testAnleiheZinsen01()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        var errors = new ArrayList<Exception>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "AnleiheZinsen01.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(0L));
+        assertThat(countAccountTransactions(results), is(1L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin(null), hasWkn("A1G1UA"), hasTicker(null), //
+                        hasName("3,00000 % Griechenland EO-Bonds 2012(23) Ser.1"), //
+                        hasCurrencyCode("EUR"))));
+
+        // check dividends transaction
+        assertThat(results, hasItem(dividend( //
+                        hasDate("2017-02-24T00:00"), hasExDate("2017-02-24T00:00"), //
+                        hasShares(1.5), //
+                        hasSource("AnleiheZinsen01.txt"), //
+                        hasNote(null), //
+                        hasAmount("EUR", 3.31), hasGrossValue("EUR", 4.50), //
+                        hasTaxes("EUR", 1.13 + 0.06), hasFees("EUR", 0.00))));
+    }
+
+    @Test
+    public void testAnleiheZinsen02()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        var errors = new ArrayList<Exception>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "AnleiheZinsen02.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(0L));
+        assertThat(countAccountTransactions(results), is(1L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(0L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin("GR0128010676"), hasWkn("A1G1UA"), hasTicker(null), //
+                        hasName("Griechenland EO-Bonds 2012(23) Ser.1"), //
+                        hasCurrencyCode("EUR"))));
+
+        // check dividends transaction
+        assertThat(results, hasItem(dividend( //
+                        hasDate("2018-02-26T00:00"), hasExDate("2018-02-24T00:00"), //
+                        hasShares(1.5), //
+                        hasSource("AnleiheZinsen02.txt"), //
+                        hasNote(null), //
+                        hasAmount("EUR", 4.50), hasGrossValue("EUR", 4.50), //
+                        hasTaxes("EUR", 0.00), hasFees("EUR", 0.00))));
+    }
+
+    @Test
     public void testStornoDividende01()
     {
         var extractor = new ConsorsbankPDFExtractor(new Client());
@@ -3860,6 +4278,42 @@ public class ConsorsbankPDFExtractorTest
     }
 
     @Test
+    public void testUebertragEingang02()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        List<Exception> errors = new ArrayList<>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "UebertragEingang02.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(0L));
+        assertThat(countAccountTransactions(results), is(1L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(1L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin(null), hasWkn("ETF018"), hasTicker(null), //
+                        hasName("Amu.Idx Sol.Amu.MSCI Wld III Act.Nom. U.ETF USD Dis. oN"), //
+                        hasCurrencyCode("EUR"))));
+
+        // check unsupported transaction
+        assertThat(results, hasItem(withFailureMessage( //
+                        Messages.MsgErrorTransactionTypeNotSupportedOrRequired, //
+                        inboundDelivery( //
+                                        hasDate("2023-04-26T00:00"), hasShares(20.37254), //
+                                        hasSource("UebertragEingang02.txt"), //
+                                        hasNote(null), //
+                                        hasAmount("EUR", 0.00), hasGrossValue("EUR", 0.00), //
+                                        hasTaxes("EUR", 0.00), hasFees("EUR", 0.00)))));
+    }
+
+    @Test
     public void testUebertragAusgang01()
     {
         var extractor = new ConsorsbankPDFExtractor(new Client());
@@ -3890,6 +4344,42 @@ public class ConsorsbankPDFExtractorTest
                         outboundDelivery( //
                                         hasDate("2023-12-22T00:00"), hasShares(300.00000), //
                                         hasSource("UebertragAusgang01.txt"), //
+                                        hasNote(null), //
+                                        hasAmount("EUR", 0.00), hasGrossValue("EUR", 0.00), //
+                                        hasTaxes("EUR", 0.00), hasFees("EUR", 0.00)))));
+    }
+
+    @Test
+    public void testUebertragAusgang02()
+    {
+        var extractor = new ConsorsbankPDFExtractor(new Client());
+
+        List<Exception> errors = new ArrayList<>();
+
+        var results = extractor.extract(PDFInputFile.loadTestCase(getClass(), "UebertragAusgang02.txt"), errors);
+
+        assertThat(errors, empty());
+        assertThat(countSecurities(results), is(1L));
+        assertThat(countBuySell(results), is(0L));
+        assertThat(countAccountTransactions(results), is(1L));
+        assertThat(countAccountTransfers(results), is(0L));
+        assertThat(countItemsWithFailureMessage(results), is(1L));
+        assertThat(countSkippedItems(results), is(0L));
+        assertThat(results.size(), is(2));
+        new AssertImportActions().check(results, "EUR");
+
+        // check security
+        assertThat(results, hasItem(security( //
+                        hasIsin(null), hasWkn("ETF110"), hasTicker(null), //
+                        hasName("Lyxor MSCI World UCITS ETF Inhaber-Anteile I o.N."), //
+                        hasCurrencyCode("EUR"))));
+
+        // check unsupported transaction
+        assertThat(results, hasItem(withFailureMessage( //
+                        Messages.MsgErrorTransactionTypeNotSupportedOrRequired, //
+                        outboundDelivery( //
+                                        hasDate("2023-04-26T00:00"), hasShares(20.37254), //
+                                        hasSource("UebertragAusgang02.txt"), //
                                         hasNote(null), //
                                         hasAmount("EUR", 0.00), hasGrossValue("EUR", 0.00), //
                                         hasTaxes("EUR", 0.00), hasFees("EUR", 0.00)))));
